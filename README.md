@@ -7,14 +7,12 @@ Performance comparison of three popular reverse proxies using Docker, wrk load t
 
 ### Throughput & Performance
 ![Throughput](charts/throughput.png)
-![Performance Score](charts/performance_score.png)
 
 ### Latency Analysis
 ![Latency](charts/latency.png)
 ![Latency Percentiles](charts/latency_percentiles.png)
 
 ### Resource Usage
-![Average Resource Usage](charts/average_resource_usage.png)
 ![Resource Usage Timeline](charts/resource_usage_timeline.png)
 ![Throughput Timeline](charts/throughput_timeline.png)
 
