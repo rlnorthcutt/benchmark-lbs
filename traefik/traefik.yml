@@ -1,0 +1,27 @@
+entryPoints:
+  web:
+    address: ":80"
+    transport:
+      respondingTimeouts:
+        readTimeout: 0
+        writeTimeout: 0
+        idleTimeout: 65s
+      lifeCycle:
+        requestAcceptGraceTimeout: 0
+        graceTimeOut: 0
+
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+log:
+  level: ERROR
+
+accessLog:
+  filePath: ""  # Disable access logs for performance
+
+# Enable compression
+compress:
+  excludedContentTypes:
+    - "text/event-stream"
