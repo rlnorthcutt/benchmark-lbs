@@ -42,6 +42,7 @@ get_container_name() {
         8080) echo "benchmark-servers-nginx-1" ;;
         8081) echo "benchmark-servers-caddy-1" ;;
         8082) echo "benchmark-servers-traefik-1" ;;
+        8083) echo "benchmark-servers-haproxy-1" ;;
     esac
 }
 
@@ -107,7 +108,7 @@ run_benchmark() {
 
 # Verify services are running
 echo -e "${YELLOW}Verifying services are running...${NC}"
-for port in 8080 8081 8082; do
+for port in 8080 8081 8082 8083; do
     if ! curl -s "http://localhost:$port/api/health" > /dev/null; then
         echo -e "${RED}Service on port $port is not responding!${NC}"
         echo -e "${RED}Please ensure all services are running with: docker compose up -d${NC}"
@@ -128,10 +129,15 @@ echo ""
 run_benchmark "nginx" 8080 "/api/compute/fibonacci?n=30"
 sleep 3
 
-run_benchmark "caddy" 8081 "/api/compute/fibonacci?n=30"
-sleep 3
+
 
 run_benchmark "traefik" 8082 "/api/compute/fibonacci?n=30"
+sleep 3
+
+run_benchmark "haproxy" 8083 "/api/compute/fibonacci?n=30"
+sleep 3
+
+run_benchmark "caddy" 8081 "/api/compute/fibonacci?n=30"
 
 echo -e "${GREEN}======================================${NC}"
 echo -e "${GREEN}All benchmarks complete!${NC}"

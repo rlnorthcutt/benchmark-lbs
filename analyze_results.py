@@ -30,6 +30,7 @@ COLORS = {
     'nginx': '#60a5fa',      # Bright blue
     'caddy': '#34d399',      # Bright green/teal
     'traefik': '#fbbf24',    # Bright amber/yellow
+    'haproxy': '#f87171',    # Bright red
 }
 
 # Line styles for charts
@@ -37,6 +38,7 @@ LINE_STYLES = {
     'nginx': '-',
     'caddy': '--',
     'traefik': '-.',
+    'haproxy': ':',
 }
 
 def setup_dark_theme(fig, ax):
@@ -462,11 +464,11 @@ def create_latency_percentiles_chart(results, output_dir='charts'):
 
 def print_summary(results):
     """Print a detailed summary table of results."""
-    print("\n" + "="*90)
+    print("\n" + "="*110)
     print("BENCHMARK RESULTS SUMMARY - Fibonacci Endpoint (n=30)")
-    print("="*90)
-    print(f"{'Metric':<35} {'Nginx':<18} {'Caddy':<18} {'Traefik':<18}")
-    print("-"*90)
+    print("="*110)
+    print(f"{'Metric':<35} {'Nginx':<18} {'Caddy':<18} {'Traefik':<18} {'HAProxy':<18}")
+    print("-"*110)
     
     # Sort by name to ensure consistent order
     results_dict = {r.name: r for r in results}
@@ -485,20 +487,21 @@ def print_summary(results):
         nginx_val = fmt.format(getattr(results_dict.get('nginx', BenchmarkResult('nginx')), attr))
         caddy_val = fmt.format(getattr(results_dict.get('caddy', BenchmarkResult('caddy')), attr))
         traefik_val = fmt.format(getattr(results_dict.get('traefik', BenchmarkResult('traefik')), attr))
-        print(f"{metric_name:<35} {nginx_val:<18} {caddy_val:<18} {traefik_val:<18}")
+        haproxy_val = fmt.format(getattr(results_dict.get('haproxy', BenchmarkResult('haproxy')), attr))
+        print(f"{metric_name:<35} {nginx_val:<18} {caddy_val:<18} {traefik_val:<18} {haproxy_val:<18}")
     
     # Add resource metrics if available
     if any(r.cpu_timeline for r in results):
         print()
         print("Resource Usage (Average)")
-        print("-"*90)
+        print("-"*110)
         for r in results:
             if r.cpu_timeline and r.memory_timeline:
                 avg_cpu = np.mean(r.cpu_timeline)
                 avg_mem = np.mean(r.memory_timeline)
                 print(f"{r.name.capitalize():<35} CPU: {avg_cpu:.2f}%{'':<10} Memory: {avg_mem:.2f} MB")
     
-    print("="*90)
+    print("="*110)
     
     # Determine winner
     max_rps = max(results, key=lambda r: r.requests_per_sec)
@@ -583,9 +586,9 @@ def main():
     else:
         print("⚠ Warning: No resource usage metrics found. Skipping resource charts.")
     
-    print("\n" + "="*90)
+    print("\n" + "="*110)
     print("Analysis complete! Check the 'charts' directory for visualizations.")
-    print("="*90)
+    print("="*110)
     print("\nGenerated Charts:")
     print("  1. throughput.png              - Requests per second comparison (horizontal bars)")
     print("  2. latency.png                 - Average latency comparison (horizontal bars)")

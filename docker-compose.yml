@@ -84,6 +84,24 @@ services:
           cpus: '2'
           memory: 512M
 
+  # HAProxy reverse proxy
+  haproxy:
+    image: haproxy:alpine
+    ports:
+      - "8083:80"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - benchmark-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 512M
+
 networks:
   benchmark-network:
     driver: bridge

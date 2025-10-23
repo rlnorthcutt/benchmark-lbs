@@ -1,6 +1,6 @@
-# 🚀 Reverse Proxy Benchmark: Nginx vs Caddy vs Traefik
+# 🚀 Reverse Proxy Benchmark: Nginx vs Caddy vs Traefik vs HAProxy
 
-Performance comparison of three popular reverse proxies using Docker, wrk load testing, and a Rust backend with CPU-intensive endpoints.
+Performance comparison of four popular reverse proxies using Docker, wrk load testing, and a Rust backend with CPU-intensive endpoints.
 
 
 ## 📊 Benchmark Results
@@ -34,7 +34,7 @@ pip install matplotlib numpy
 ```
 
 ```bash
-# 1. Start services (Nginx:8080, Caddy:8081, Traefik:8082)
+# 1. Start services (Nginx:8080, Caddy:8081, Traefik:8082, HAProxy:8083)
 docker compose up -d
 
 # 2. Run benchmark
@@ -62,6 +62,7 @@ python3 analyze_results.py
 - **Nginx**: Highest throughput, lowest latency (C-based, highly optimized)
 - **Caddy**: Good balance, automatic HTTPS (Go-based)
 - **Traefik**: Feature-rich dynamic routing (Go-based)
+- **HAProxy**: Enterprise-grade load balancing (C-based, high performance)
 
 ## 🧹 Cleanup
 
