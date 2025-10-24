@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""
-Analyze benchmark results and generate performance comparison charts.
-This script processes wrk output and system metrics to create detailed visualizations.
-"""
 
 import re
 import sys
@@ -15,25 +11,21 @@ import matplotlib
 import numpy as np
 from matplotlib.patches import Rectangle
 
-# Use non-interactive backend
 matplotlib.use('Agg')
 
-# Dark theme colors
-DARK_BG = '#1a1a2e'          # Dark background
-DARK_SURFACE = '#16213e'     # Slightly lighter for surfaces
-DARK_TEXT = '#e8e8e8'        # Light text
-DARK_TEXT_SECONDARY = '#a8a8a8'  # Secondary text
-DARK_GRID = '#404040'        # Grid lines
+DARK_BG = '#1a1a2e'
+DARK_SURFACE = '#16213e'
+DARK_TEXT = '#e8e8e8'
+DARK_TEXT_SECONDARY = '#a8a8a8'
+DARK_GRID = '#404040'
 
-# Color palette - vibrant colors for dark theme
 COLORS = {
-    'nginx': '#60a5fa',      # Bright blue
-    'caddy': '#34d399',      # Bright green/teal
-    'traefik': '#fbbf24',    # Bright amber/yellow
-    'haproxy': '#f87171',    # Bright red
+    'nginx': '#60a5fa',
+    'caddy': '#34d399',
+    'traefik': '#fbbf24',
+    'haproxy': '#f87171',
 }
 
-# Line styles for charts
 LINE_STYLES = {
     'nginx': '-',
     'caddy': '--',
@@ -42,12 +34,9 @@ LINE_STYLES = {
 }
 
 def setup_dark_theme(fig, ax):
-    """Apply dark theme styling to figure and axes."""
     fig.patch.set_facecolor(DARK_BG)
     
-    # Handle both single axes and multiple axes (list or array)
     if isinstance(ax, (list, np.ndarray)):
-        # It's a collection of axes
         axes_list = ax.flat if isinstance(ax, np.ndarray) else ax
         for a in axes_list:
             a.set_facecolor(DARK_SURFACE)
@@ -60,7 +49,6 @@ def setup_dark_theme(fig, ax):
             a.yaxis.label.set_color(DARK_TEXT)
             a.title.set_color(DARK_TEXT)
     else:
-        # It's a single axis
         ax.set_facecolor(DARK_SURFACE)
         ax.tick_params(colors=DARK_TEXT, which='both')
         ax.spines['bottom'].set_color(DARK_TEXT_SECONDARY)
@@ -85,13 +73,11 @@ class BenchmarkResult:
         self.latency_99 = 0
         self.total_requests = 0
         self.total_transfer = 0
-        # Time series data
         self.cpu_timeline = []
         self.memory_timeline = []
         self.timestamps = []
 
 def parse_metrics_csv(filepath):
-    """Parse CSV metrics file containing CPU and memory data."""
     timestamps = []
     cpu_values = []
     memory_values = []
@@ -105,57 +91,49 @@ def parse_metrics_csv(filepath):
                 if start_time is None:
                     start_time = timestamp
                 
-                # Relative time in seconds
                 relative_time = timestamp - start_time
                 timestamps.append(relative_time)
                 
                 cpu_values.append(float(row['cpu_percent']))
                 memory_values.append(float(row['memory_mb']))
     except FileNotFoundError:
-        print(f"Warning: Metrics file not found: {filepath}")
+        print(f"Error: Metrics file not found: {filepath}")
     except Exception as e:
-        print(f"Warning: Error parsing metrics file {filepath}: {e}")
+        print(f"Error parsing metrics file {filepath}: {e}")
     
     return timestamps, cpu_values, memory_values
 
 
 def parse_wrk_output(filepath):
-    """Parse wrk output file and extract metrics."""
     with open(filepath, 'r') as f:
         content = f.read()
 
     result = BenchmarkResult(Path(filepath).stem.split('_')[0])
 
-    # Parse requests per second
     match = re.search(r'Requests/sec:\s+([\d.]+)', content)
     if match:
         result.requests_per_sec = float(match.group(1))
 
-    # Parse transfer per second
     match = re.search(r'Transfer/sec:\s+([\d.]+)([KMG]B)', content)
     if match:
         value = float(match.group(1))
         unit = match.group(2)
-        # Convert to MB
         if unit == 'KB':
             value /= 1024
         elif unit == 'GB':
             value *= 1024
         result.transfer_per_sec = value
 
-    # Parse average latency
     match = re.search(r'Latency\s+([\d.]+)(\w+)', content)
     if match:
         value = float(match.group(1))
         unit = match.group(2)
-        # Convert to ms
         if unit == 's':
             value *= 1000
         elif unit == 'us':
             value /= 1000
         result.avg_latency = value
 
-    # Parse latency distribution
     match = re.search(r'50%\s+([\d.]+)(\w+)', content)
     if match:
         value = float(match.group(1))
@@ -196,7 +174,6 @@ def parse_wrk_output(filepath):
             value /= 1000
         result.latency_99 = value
 
-    # Parse total requests
     match = re.search(r'([\d.]+)([KM])?\s+requests in', content)
     if match:
         value = float(match.group(1))
@@ -207,7 +184,6 @@ def parse_wrk_output(filepath):
             value *= 1000000
         result.total_requests = int(value)
 
-    # Load metrics CSV if available
     metrics_file = filepath.replace('.txt', '_metrics.csv')
     if os.path.exists(metrics_file):
         timestamps, cpu_values, memory_values = parse_metrics_csv(metrics_file)
@@ -218,11 +194,9 @@ def parse_wrk_output(filepath):
     return result
 
 def create_time_series_chart(results, output_dir='charts'):
-    """Create line charts showing CPU and memory over time."""
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 10))
     setup_dark_theme(fig, [ax1, ax2])
     
-    # CPU Usage Over Time
     for result in results:
         if result.timestamps and result.cpu_timeline:
             ax1.plot(result.timestamps, result.cpu_timeline, 
@@ -246,7 +220,6 @@ def create_time_series_chart(results, output_dir='charts'):
     ax1.set_xlim(left=0)
     ax1.set_ylim(bottom=0)
     
-    # Memory Usage Over Time
     for result in results:
         if result.timestamps and result.memory_timeline:
             ax2.plot(result.timestamps, result.memory_timeline,
@@ -276,7 +249,6 @@ def create_time_series_chart(results, output_dir='charts'):
     plt.close()
 
 def create_throughput_chart(results, output_dir='charts'):
-    """Create horizontal bar chart for requests per second with better styling."""
     fig, ax = plt.subplots(figsize=(10, 4))
     setup_dark_theme(fig, ax)
     
@@ -284,10 +256,8 @@ def create_throughput_chart(results, output_dir='charts'):
     rps_values = [r.requests_per_sec for r in results]
     colors = [COLORS[r.name] for r in results]
     
-    # Create position array for bars
     y_pos = np.arange(len(names))
     
-    # Even tighter bars
     bars = ax.barh(y_pos, rps_values, height=0.8, color=colors, alpha=0.9, 
                    edgecolor=DARK_TEXT_SECONDARY, align='center', linewidth=.1)
     
@@ -296,25 +266,20 @@ def create_throughput_chart(results, output_dir='charts'):
                 fontsize=14, fontweight='bold', pad=30, color=DARK_TEXT)
     ax.grid(axis='x', alpha=0.2, linestyle='--', color=DARK_GRID)
     
-    # Remove y-axis labels
     ax.set_yticks([])
     ax.set_yticklabels([])
     
-    # Add value labels at the end of bars
     for i, (bar, name) in enumerate(zip(bars, names)):
         width = bar.get_width()
         ax.text(width * 1.02, bar.get_y() + bar.get_height()/2.,
                 f'{width:.0f} req/s',
                 ha='left', va='center', fontweight='bold', fontsize=11, color=DARK_TEXT)
     
-    # Adjust x-axis with more padding on the right (30-40% whitespace)
     x_max = max(rps_values) * 1.45
     ax.set_xlim(0, x_max)
     
-    # Tighter y-axis with padding on top and bottom
     ax.set_ylim(-2, len(names) + 0.8)
     
-    # Create horizontal legend above the topmost bar
     legend_elements = []
     for i, (name, color) in enumerate(zip(names, colors)):
         legend_elements.append(Rectangle((0, 0), 1, 1, fc=color, edgecolor=DARK_TEXT_SECONDARY, 
@@ -337,17 +302,15 @@ def create_throughput_chart(results, output_dir='charts'):
         text.set_color(DARK_TEXT)
         text.set_fontweight('bold')
     
-    # Add subtitle with more bottom padding
     fig.text(0.5, 0.01, 'Higher values indicate better performance', 
             ha='center', fontsize=10, style='italic', color=DARK_TEXT_SECONDARY)
     
-    plt.tight_layout(rect=[0, 0.03, 1, 1])  # Add bottom margin
+    plt.tight_layout(rect=[0, 0.03, 1, 1])
     plt.savefig(f'{output_dir}/throughput.png', dpi=300, bbox_inches='tight', facecolor=DARK_BG)
     print(f"✓ Created {output_dir}/throughput.png")
     plt.close()
 
 def create_latency_chart(results, output_dir='charts'):
-    """Create horizontal bar chart for average latency with better styling."""
     fig, ax = plt.subplots(figsize=(10, 4))
     setup_dark_theme(fig, ax)
     
@@ -355,10 +318,8 @@ def create_latency_chart(results, output_dir='charts'):
     latency_values = [r.avg_latency for r in results]
     colors = [COLORS[r.name] for r in results]
     
-    # Create position array for bars
     y_pos = np.arange(len(names))
     
-    # Even tighter bars
     bars = ax.barh(y_pos, latency_values, height=0.8, color=colors, alpha=0.9,
                    edgecolor=DARK_TEXT_SECONDARY, align='center', linewidth=.1)
     
@@ -367,25 +328,20 @@ def create_latency_chart(results, output_dir='charts'):
                 fontsize=14, fontweight='bold', pad=30, color=DARK_TEXT)
     ax.grid(axis='x', alpha=0.2, linestyle='--', color=DARK_GRID)
     
-    # Remove y-axis labels
     ax.set_yticks([])
     ax.set_yticklabels([])
     
-    # Add value labels at the end of bars
     for i, (bar, name) in enumerate(zip(bars, names)):
         width = bar.get_width()
         ax.text(width * 1.02, bar.get_y() + bar.get_height()/2.,
                 f'{width:.2f} ms',
                 ha='left', va='center', fontweight='bold', fontsize=11, color=DARK_TEXT)
     
-    # Adjust x-axis with more padding on the right (30-40% whitespace)
     x_max = max(latency_values) * 1.45
     ax.set_xlim(0, x_max)
     
-    # Tighter y-axis with padding on top and bottom
     ax.set_ylim(-2, len(names) + 0.8)
     
-    # Create horizontal legend above the topmost bar
     legend_elements = []
     for i, (name, color) in enumerate(zip(names, colors)):
         legend_elements.append(Rectangle((0, 0), 1, 1, fc=color, edgecolor=DARK_TEXT_SECONDARY, 
@@ -408,17 +364,15 @@ def create_latency_chart(results, output_dir='charts'):
         text.set_color(DARK_TEXT)
         text.set_fontweight('bold')
     
-    # Add subtitle with more bottom padding
     fig.text(0.5, 0.01, 'Lower values indicate better performance', 
             ha='center', fontsize=10, style='italic', color=DARK_TEXT_SECONDARY)
     
-    plt.tight_layout(rect=[0, 0.03, 1, 1])  # Add bottom margin
+    plt.tight_layout(rect=[0, 0.03, 1, 1])
     plt.savefig(f'{output_dir}/latency.png', dpi=300, bbox_inches='tight', facecolor=DARK_BG)
     print(f"✓ Created {output_dir}/latency.png")
     plt.close()
 
 def create_latency_percentiles_chart(results, output_dir='charts'):
-    """Create grouped bar chart for latency percentiles."""
     fig, ax = plt.subplots(figsize=(14, 8))
     setup_dark_theme(fig, ax)
     
@@ -431,7 +385,6 @@ def create_latency_percentiles_chart(results, output_dir='charts'):
     p90_values = [r.latency_90 for r in results]
     p99_values = [r.latency_99 for r in results]
     
-    # Bright colors for dark theme
     ax.bar(x - 1.5*width, p50_values, width, label='50th (Median)', 
           color='#60a5fa', alpha=0.9, edgecolor=DARK_TEXT_SECONDARY, linewidth=1.2)
     ax.bar(x - 0.5*width, p75_values, width, label='75th', 
@@ -452,25 +405,22 @@ def create_latency_percentiles_chart(results, output_dir='charts'):
         text.set_color(DARK_TEXT)
     ax.grid(axis='y', alpha=0.2, linestyle='--', color=DARK_GRID)
     
-    # Add subtitle with more bottom padding
     fig.text(0.5, 0.01, 
             'Percentiles show latency experienced by X% of requests (e.g., 99th = 99% of requests were faster than this)', 
             ha='center', fontsize=9, style='italic', color=DARK_TEXT_SECONDARY, wrap=True)
     
-    plt.tight_layout(rect=[0, 0.04, 1, 1])  # Add bottom margin
+    plt.tight_layout(rect=[0, 0.04, 1, 1])
     plt.savefig(f'{output_dir}/latency_percentiles.png', dpi=300, bbox_inches='tight', facecolor=DARK_BG)
     print(f"✓ Created {output_dir}/latency_percentiles.png")
     plt.close()
 
 def print_summary(results):
-    """Print a detailed summary table of results."""
     print("\n" + "="*110)
     print("BENCHMARK RESULTS SUMMARY - Fibonacci Endpoint (n=30)")
     print("="*110)
     print(f"{'Metric':<35} {'Nginx':<18} {'Caddy':<18} {'Traefik':<18} {'HAProxy':<18}")
     print("-"*110)
     
-    # Sort by name to ensure consistent order
     results_dict = {r.name: r for r in results}
     
     metrics = [
@@ -490,7 +440,6 @@ def print_summary(results):
         haproxy_val = fmt.format(getattr(results_dict.get('haproxy', BenchmarkResult('haproxy')), attr))
         print(f"{metric_name:<35} {nginx_val:<18} {caddy_val:<18} {traefik_val:<18} {haproxy_val:<18}")
     
-    # Add resource metrics if available
     if any(r.cpu_timeline for r in results):
         print()
         print("Resource Usage (Average)")
@@ -503,7 +452,6 @@ def print_summary(results):
     
     print("="*110)
     
-    # Determine winner
     max_rps = max(results, key=lambda r: r.requests_per_sec)
     min_latency = min(results, key=lambda r: r.avg_latency)
     
@@ -525,7 +473,6 @@ def main():
         timestamp = sys.argv[1]
         pattern = f'results/*fibonacci*{timestamp}.txt'
     else:
-        # Find the latest results
         pattern = 'results/*fibonacci*.txt'
     
     result_files = glob.glob(pattern)
@@ -535,9 +482,7 @@ def main():
         print("Run ./benchmark.sh first to generate results.")
         sys.exit(1)
     
-    # If no timestamp specified, group by latest timestamp
     if len(sys.argv) == 1:
-        # Extract timestamps and get the latest
         timestamps = set()
         for f in result_files:
             match = re.search(r'_(\d{8}_\d{6})\.txt$', f)
@@ -547,7 +492,6 @@ def main():
         if timestamps:
             latest_timestamp = max(timestamps)
             result_files = [f for f in result_files if latest_timestamp in f]
-            print(f"Using latest results from: {latest_timestamp}\n")
     
     results = []
     for filepath in result_files:
@@ -556,7 +500,7 @@ def main():
             results.append(result)
             print(f"✓ Parsed {filepath}")
         except Exception as e:
-            print(f"✗ Error parsing {filepath}: {e}")
+            print(f"Error parsing {filepath}: {e}")
     
     if not results:
         print("Error: No valid results to analyze")
@@ -564,27 +508,22 @@ def main():
     
     print()
     
-    # Sort results by name for consistent display
     results.sort(key=lambda r: r.name)
     
-    # Print summary
     print_summary(results)
     
-    # Create charts directory
     output_dir = 'charts'
     os.makedirs(output_dir, exist_ok=True)
     
-    # Create all charts
     print("Generating charts...")
     create_throughput_chart(results, output_dir)
     create_latency_chart(results, output_dir)
     create_latency_percentiles_chart(results, output_dir)
     
-    # Create resource usage charts if data is available
     if any(r.cpu_timeline for r in results):
         create_time_series_chart(results, output_dir)
     else:
-        print("⚠ Warning: No resource usage metrics found. Skipping resource charts.")
+        print("Warning: No resource usage metrics found. Skipping resource charts.")
     
     print("\n" + "="*110)
     print("Analysis complete! Check the 'charts' directory for visualizations.")

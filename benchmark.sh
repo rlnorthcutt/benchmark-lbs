@@ -5,11 +5,10 @@
 
 set -e
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 echo -e "${GREEN}======================================${NC}"
 echo -e "${GREEN}Reverse Proxy Benchmark${NC}"
@@ -22,9 +21,8 @@ THREADS=4
 CONNECTIONS=100
 RESULTS_DIR="./results"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-SAMPLE_INTERVAL=0.1  # Sample metrics every 0.1 seconds (5x more data points)
+SAMPLE_INTERVAL=0.1
 
-# Create results directory
 mkdir -p "$RESULTS_DIR"
 
 # Check if wrk is installed
@@ -35,7 +33,6 @@ else
     USE_DOCKER_WRK=false
 fi
 
-# Function to get container name from port
 get_container_name() {
     local port=$1
     case $port in
@@ -46,7 +43,6 @@ get_container_name() {
     esac
 }
 
-# Function to monitor system metrics
 monitor_metrics() {
     local container_name=$1
     local output_file=$2
@@ -85,11 +81,9 @@ run_benchmark() {
     local base_filename="${name}_fibonacci_${TIMESTAMP}"
     local metrics_file="$RESULTS_DIR/${base_filename}_metrics.csv"
     
-    # Start monitoring in background
     monitor_metrics "$container_name" "$metrics_file" "$DURATION" &
     local monitor_pid=$!
 
-    # Run the benchmark
     if [ "$USE_DOCKER_WRK" = true ]; then
         docker run --rm --network host williamyeh/wrk \
             -t${THREADS} -c${CONNECTIONS} -d${DURATION}s \
@@ -99,7 +93,6 @@ run_benchmark() {
             --latency "$url" > "$RESULTS_DIR/${base_filename}.txt"
     fi
 
-    # Wait for monitoring to complete
     wait $monitor_pid
 
     echo -e "${GREEN}✓ $name benchmark complete${NC}"
