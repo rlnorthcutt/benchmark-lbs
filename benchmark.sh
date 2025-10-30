@@ -22,6 +22,12 @@ CONNECTIONS=100
 RESULTS_DIR="./results"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 SAMPLE_INTERVAL=0.1
+SCHEME=${SCHEME:-https}
+
+curl_opts=(-s)
+if [ "$SCHEME" = "https" ]; then
+    curl_opts+=(-k)
+fi
 
 mkdir -p "$RESULTS_DIR"
 
@@ -72,7 +78,7 @@ run_benchmark() {
     local name=$1
     local port=$2
     local endpoint=$3
-    local url="http://localhost:$port$endpoint"
+    local url="$SCHEME://localhost:$port$endpoint"
     local container_name=$(get_container_name $port)
 
     echo -e "${YELLOW}Benchmarking $name on port $port ($endpoint)...${NC}"
@@ -102,7 +108,7 @@ run_benchmark() {
 # Verify services are running
 echo -e "${YELLOW}Verifying services are running...${NC}"
 for port in 8080 8081 8082 8083; do
-    if ! curl -s "http://localhost:$port/api/health" > /dev/null; then
+    if ! curl "${curl_opts[@]}" "$SCHEME://localhost:$port/api/health" > /dev/null; then
         echo -e "${RED}Service on port $port is not responding!${NC}"
         echo -e "${RED}Please ensure all services are running with: docker compose up -d${NC}"
         exit 1
