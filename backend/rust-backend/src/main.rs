@@ -4,8 +4,9 @@ use axum::{
     routing::get,
     Router,
 };
+use axum_server::tls_rustls::RustlsConfig;
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
+use std::{env, net::SocketAddr};
 use tower_http::cors::CorsLayer;
 
 #[tokio::main]
@@ -17,12 +18,24 @@ async fn main() {
         .route("/api/compute/fibonacci", get(compute_fibonacci))
         .layer(CorsLayer::permissive());
 
-    // Run it with hyper on localhost:3000
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
-    println!("🚀 Server running on http://{}", addr);
+    let cert_path = env::var("TLS_CERT_PATH").unwrap_or_else(|_| "/certs/server.crt".to_string());
+    let key_path = env::var("TLS_KEY_PATH").unwrap_or_else(|_| "/certs/server.key".to_string());
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let tls_config = RustlsConfig::from_pem_file(&cert_path, &key_path)
+        .await
+        .expect("failed to load TLS configuration");
+
+    // Run it with TLS on localhost:3000
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    println!(
+        "🚀 Server running on https://{} (cert: {}, key: {})",
+        addr, cert_path, key_path
+    );
+
+    axum_server::bind_rustls(addr, tls_config)
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 }
 
 // Root endpoint - simple HTML response

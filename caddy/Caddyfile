@@ -1,7 +1,13 @@
 :80 {
+  redir https://{host}{uri} permanent
+}
+
+:443 {
+  tls /certs/server.crt /certs/server.key
   route {
-    reverse_proxy backend:3000 {
+    reverse_proxy https://backend:3000 {
       transport http {
+        tls_insecure_skip_verify
         keepalive 60s
         keepalive_interval 20s
         keepalive_idle_conns 256

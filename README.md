@@ -23,7 +23,7 @@ The backend is built with **Axum** (Rust web framework) using **Tokio** for asyn
 - Routes: root HTML page, `/api/health` health check, `/api/compute/fibonacci?n=30` CPU-intensive endpoint
 - Fibonacci calculation runs in `spawn_blocking` to prevent blocking the async runtime
 - Uses iterative algorithm (not recursive) to efficiently compute Fibonacci numbers up to n=50
-- CORS enabled via `tower-http` middleware, listening on port 3000
+- CORS enabled via `tower-http` middleware, listening on port 3000 over HTTPS with self-signed certificates mounted from `./certs`
 - Fast, memory-safe, and handles concurrent requests efficiently
 
 ## 🚀 Quick Start
@@ -34,7 +34,7 @@ pip install matplotlib numpy
 ```
 
 ```bash
-# 1. Start services (Nginx:8080, Caddy:8081, Traefik:8082, HAProxy:8083)
+# 1. Start services (HTTPS on Nginx:8080, Caddy:8081, Traefik:8082, HAProxy:8083)
 docker compose up -d
 
 # 2. Run benchmark
@@ -59,10 +59,10 @@ python3 analyze_results.py
 
 ## 📈 Typical Results
 
-- **Nginx**: Highest throughput, lowest latency (C-based, highly optimized)
-- **Caddy**: Good balance, automatic HTTPS (Go-based)
-- **Traefik**: Feature-rich dynamic routing (Go-based)
-- **HAProxy**: Enterprise-grade load balancing (C-based, high performance)
+- **Nginx**: Highest throughput, lowest latency (C-based, highly optimized) with TLS termination
+- **Caddy**: Good balance with reverse proxying to HTTPS backends (Go-based)
+- **Traefik**: Feature-rich dynamic routing (Go-based) serving HTTPS
+- **HAProxy**: Enterprise-grade load balancing (C-based, high performance) terminating TLS
 
 ## 🧹 Cleanup
 
