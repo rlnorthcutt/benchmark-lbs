@@ -4,7 +4,7 @@ http:
       rule: "PathPrefix(`/`)"
       service: backend-service
       entryPoints:
-        - web
+        - websecure
       middlewares:
         - compression
 
@@ -12,7 +12,7 @@ http:
     backend-service:
       loadBalancer:
         servers:
-          - url: "http://backend:3000"
+          - url: "https://backend:3000"
         # Keepalive settings similar to nginx
         passHostHeader: true
         responseForwarding:
@@ -21,6 +21,7 @@ http:
           interval: 30s
           timeout: 5s
           path: /
+        serversTransport: default
           
   middlewares:
     compression:
@@ -31,8 +32,13 @@ http:
   # Configure transport settings for better performance
   serversTransports:
     default:
+      insecureSkipVerify: true
       maxIdleConnsPerHost: 128
       forwardingTimeouts:
         dialTimeout: 2s
         responseHeaderTimeout: 0s
         idleConnTimeout: 65s
+  tls:
+    certificates:
+      - certFile: /certs/server.crt
+        keyFile: /certs/server.key
