@@ -41,11 +41,54 @@ fi
 
 get_container_name() {
     local port=$1
+    local service=""
+
     case $port in
-        8080) echo "benchmark-servers-nginx-1" ;;
-        8081) echo "benchmark-servers-caddy-1" ;;
-        8082) echo "benchmark-servers-traefik-1" ;;
-        8083) echo "benchmark-servers-haproxy-1" ;;
+        8080) service="nginx" ;;
+        8081) service="caddy" ;;
+        8082) service="traefik" ;;
+        8083) service="haproxy" ;;
+    esac
+
+    if [ -z "$service" ]; then
+        return 1
+    fi
+
+    local container_id=""
+    if docker compose version >/dev/null 2>&1; then
+        container_id=$(docker compose ps -q "$service" 2>/dev/null)
+    fi
+
+    if [ -z "$container_id" ] && command -v docker-compose >/dev/null 2>&1; then
+        container_id=$(docker-compose ps -q "$service" 2>/dev/null)
+    fi
+
+    if [ -n "$container_id" ]; then
+        echo "$container_id"
+    else
+        local project_name=${COMPOSE_PROJECT_NAME:-$(basename "$(pwd)")}
+        echo "${project_name}-${service}-1"
+    fi
+}
+
+convert_to_mb() {
+    local value=$(echo "$1" | tr -d ' ')
+    local number=$(echo "$value" | sed -E 's/([0-9.]+).*/\1/')
+    local unit=$(echo "$value" | sed -E 's/[0-9.]+(.*)/\1/')
+
+    case "$unit" in
+        GiB|GB|G)
+            awk -v num="$number" 'BEGIN {printf "%.2f", num * 1024}'
+            ;;
+        KiB|KB|K)
+            awk -v num="$number" 'BEGIN {printf "%.4f", num / 1024}'
+            ;;
+        B)
+            awk -v num="$number" 'BEGIN {printf "%.6f", num / (1024 * 1024)}'
+            ;;
+        *)
+            awk -v num="$number" 'BEGIN {printf "%.2f", num}'
+            ;;
     esac
 }
 
@@ -65,9 +108,21 @@ monitor_metrics() {
             local cpu=$(echo "$cpu_raw" | awk '{if ($1 > 100) print 100; else print $1}')
             
             local mem_usage=$(echo "$stats" | cut -d',' -f2)
-            local mem_mb=$(echo "$mem_usage" | awk '{print $1}' | sed 's/MiB//')
-            local mem_percent=$(echo "$mem_usage" | awk -F'/' '{print $2}' | awk '{print $1}' | sed 's/MiB//' | awk -v used="$mem_mb" '{printf "%.2f", (used/$1)*100}')
-            
+            local mem_used_raw=$(echo "$mem_usage" | cut -d'/' -f1)
+            local mem_total_raw=$(echo "$mem_usage" | cut -d'/' -f2)
+
+            local mem_mb=$(convert_to_mb "$mem_used_raw")
+            local mem_total_mb=$(convert_to_mb "$mem_total_raw")
+
+            # Fallback to zero when conversion fails
+            mem_mb=${mem_mb:-0}
+            mem_total_mb=${mem_total_mb:-0}
+
+            local mem_percent="0.00"
+            if awk -v total="$mem_total_mb" 'BEGIN {exit !(total>0)}'; then
+                mem_percent=$(awk -v used="$mem_mb" -v total="$mem_total_mb" 'BEGIN {if (total>0) printf "%.2f", (used/total)*100; else printf "0.00"}')
+            fi
+
             echo "$(date +%s.%N),$cpu,$mem_mb,$mem_percent" >> "$output_file"
         fi
         sleep $SAMPLE_INTERVAL

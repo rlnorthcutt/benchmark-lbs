@@ -43,7 +43,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'
+          cpus: '1'
           memory: 512M
 
   # Caddy reverse proxy
@@ -63,7 +63,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'
+          cpus: '1'
           memory: 512M
 
   # Traefik reverse proxy
@@ -90,7 +90,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'
+          cpus: '1'
           memory: 512M
 
   # HAProxy reverse proxy
@@ -109,7 +109,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'
+          cpus: '1'
           memory: 512M
 
 networks:
